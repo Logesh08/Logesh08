@@ -12,7 +12,13 @@ When I’m not coding, you’ll catch me with a tech book or writing down random
 - Advanced algorithms (DP, graph theory, etc.)  
 - Machine‑learning model deployment & monitoring  
 - Evaluating new runtimes / frameworks  
-- Cloud‑native deployments with Kubernetes & serverless  
+- Cloud‑native deployments with Kubernetes & serverless
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/github-snake-dark.svg" />
+  <source media="(prefers-color-scheme: light)" srcset="assets/github-snake.svg" />
+  <img alt="GitHub contribution snake" src="assets/github-snake.svg" />
+</picture>
 
 ## 🛠️ Tech Stack
 

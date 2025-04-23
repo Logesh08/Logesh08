@@ -4,7 +4,10 @@ on:
   schedule:
     # Every day at midnight UTC
     # - cron: '0 0 * * *'
-    - cron: '30 18 * * *'   # runs at 18:30 UTC → 00:00 IST
+    # at 00:00, 06:00, 12:00 & 18:00 IST
+    - cron: '30 18,0,6,12 * * *'
+    # Same as  above but UTC version
+    # - cron: '0 0,6,12,18 * * *'
   workflow_dispatch:
 
 jobs:

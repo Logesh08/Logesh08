@@ -2,12 +2,8 @@ name: Generate GitHub Contribution Snake
 
 on:
   schedule:
-    # Every day at midnight UTC
-    # - cron: '0 0 * * *'
     # at 00:00, 06:00, 12:00 & 18:00 IST
     - cron: '30 18,0,6,12 * * *'
-    # Same as  above but UTC version
-    # - cron: '0 0,6,12,18 * * *'
   workflow_dispatch:
 
 jobs:
@@ -16,23 +12,59 @@ jobs:
       contents: write
     runs-on: ubuntu-latest
     steps:
-      # 1) checkout your code
-      - uses: actions/checkout@v3
+      # 1) Full checkout so we can push back
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
 
-      # 2) generate the snake SVGs
+      # 2) Ensure assets folder exists
+      - name: Prepare assets folder
+        run: mkdir -p assets
+
+      # 3) Generate snake SVGs (with retries)
       - name: Generate snake SVGs
-        uses: Platane/snk@v3
+        id: snake
+        run: |
+          retries=3
+          count=0
+          until [ $count -ge $retries ]
+          do
+            echo "🐍 Attempt #$((count+1)) to generate snake..."
+            if gh run generate-snake-temp; then
+              echo "✅ Snake generated successfully"
+              exit 0
+            fi
+            count=$((count+1))
+            echo "🔄 Retrying in 5s..."
+            sleep 5
+          done
+          echo "❌ All attempts failed"
+          exit 1
+        # wrap the official action in a temporary function
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+      - uses: Platane/snk@v3.3.0
+        if: always()
         with:
           github_user_name: ${{ github.repository_owner }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
           outputs: |
             assets/github-snake.svg
             assets/github-snake-dark.svg?palette=github-dark
+        continue-on-error: true
 
-      # 3) commit + push the updated assets back to your repo
+      # 4) Debug listing so you can see what happened
+      - name: List assets directory
+        run: ls -l assets || echo "No assets directory found"
+
+      # 5) Commit & push (even if the snake failed—no changes = no commit)
       - name: Commit and push
         run: |
           git config user.name "${{ github.actor }}"
           git config user.email "${{ github.actor }}@users.noreply.github.com"
           git add assets/github-snake*.svg
-          git commit -m "chore: update GitHub snake"
+          git diff --cached --name-status
+          git commit -m "chore: update GitHub snake" || echo "No changes to commit"
           git push

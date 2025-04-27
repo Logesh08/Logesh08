@@ -2,8 +2,7 @@ name: Generate GitHub Contribution Snake
 
 on:
   schedule:
-    # at 00:00, 06:00, 12:00 & 18:00 IST
-    - cron: '30 18,0,6,12 * * *'
+    - cron: '30 18,0,6,12 * * *'  # 00:00/06:00/12:00/18:00 IST
   workflow_dispatch:
 
 jobs:
@@ -12,41 +11,18 @@ jobs:
       contents: write
     runs-on: ubuntu-latest
     steps:
-      # 1) Full checkout so we can push back
-      - name: Checkout repository
+      - name: Checkout code
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
 
-      # 2) Ensure assets folder exists
-      - name: Prepare assets folder
+      - name: Ensure assets folder
         run: mkdir -p assets
 
-      # 3) Generate snake SVGs (with retries)
-      - name: Generate snake SVGs
-        id: snake
-        run: |
-          retries=3
-          count=0
-          until [ $count -ge $retries ]
-          do
-            echo "🐍 Attempt #$((count+1)) to generate snake..."
-            if gh run generate-snake-temp; then
-              echo "✅ Snake generated successfully"
-              exit 0
-            fi
-            count=$((count+1))
-            echo "🔄 Retrying in 5s..."
-            sleep 5
-          done
-          echo "❌ All attempts failed"
-          exit 1
-        # wrap the official action in a temporary function
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        shell: bash
-      - uses: Platane/snk@v3.3.0
-        if: always()
+      # First attempt
+      - name: Generate snake (attempt #1)
+        id: snake1
+        uses: Platane/snk@v3
         with:
           github_user_name: ${{ github.repository_owner }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
@@ -55,16 +31,40 @@ jobs:
             assets/github-snake-dark.svg?palette=github-dark
         continue-on-error: true
 
-      # 4) Debug listing so you can see what happened
-      - name: List assets directory
-        run: ls -l assets || echo "No assets directory found"
+      # Check if the file actually exists
+      - name: Did we get snake.svg?
+        id: check1
+        run: |
+          if [ -f assets/github-snake.svg ]; then
+            echo "found=true" >> $GITHUB_OUTPUT
+          else
+            echo "found=false" >> $GITHUB_OUTPUT
+          fi
 
-      # 5) Commit & push (even if the snake failed—no changes = no commit)
-      - name: Commit and push
+      # Retry if first failed
+      - name: Generate snake (attempt #2)
+        if: steps.check1.outputs.found == 'false'
+        uses: Platane/snk@v3
+        with:
+          github_user_name: ${{ github.repository_owner }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          outputs: |
+            assets/github-snake.svg
+            assets/github-snake-dark.svg?palette=github-dark
+        continue-on-error: true
+
+      # Final check
+      - name: Final snake check
+        run: |
+          if [ ! -f assets/github-snake.svg ]; then
+            echo "❌ Snake generation failed after 2 attempts."
+            exit 1
+          fi
+
+      - name: Commit & push snake
         run: |
           git config user.name "${{ github.actor }}"
           git config user.email "${{ github.actor }}@users.noreply.github.com"
           git add assets/github-snake*.svg
-          git diff --cached --name-status
           git commit -m "chore: update GitHub snake" || echo "No changes to commit"
           git push

@@ -3,7 +3,7 @@
 <!-- # Hi there, I'm Logesh Krishna V 👋 -->
 
 ## 👋 About Me
-I’m a software developer at **Zoho** with 2 + years of experience.  
+I’m a software engineer at **Zoho** with 2 + years of experience.  
 I thrive on backend challenges, stealthy web‑scraping tricks, and turning AI into real‑world automation.  
 When I’m not coding, you’ll catch me with a tech book or writing down random ideas for my next side project.
 
